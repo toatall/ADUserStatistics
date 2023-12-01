@@ -1,0 +1,31 @@
+/*
+    html {
+  font-size: 14px;
+}
+
+@media (min-width: 768px) {
+  html {
+    font-size: 16px;
+  }
+}
+*/
+
+html {
+  position: relative;
+  min-height: 100%;
+  height: unset;
+}
+
+body {
+  margin-bottom: 60px;
+}
+
+.footer {
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+    height: 5rem;
+    padding: 2rem 0;
+    background-color: rgba(0,0,0,.03);
+    border-top: 1px solid rgba(34,36,38,.1);
+}

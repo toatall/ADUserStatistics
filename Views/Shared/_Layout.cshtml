@@ -1,0 +1,44 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - ADUserStatistics</title>
+    <link rel="stylesheet" href="~/lib/Semantic-UI-CSS-master/semantic.min.css" />
+    <link rel="stylesheet" href="~/lib/fontawesome-free-6.4.2-web/css/all.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <!--link rel="stylesheet" href="~/ADUserStatistics.styles.css" asp-append-version="true" /-->
+</head>
+<body>
+    <header>
+        <nav class="ui fixed stackable menu" style="padding: 1rem 0;">
+            <div class="ui container">
+                <a class="header item" asp-area="" asp-controller="Home" asp-action="Index">
+                    <i class="audio description icon"></i>&nbsp;&nbsp;Active Directory Statistic
+                </a>
+                <a class="item" asp-area="" asp-controller="Home" asp-action="Index">
+                    Главная
+                </a>
+                <span class="right item">
+                    <i class="user circle icon"></i>
+                    @User?.Identity?.Name
+                </span>
+            </div>            
+        </nav>
+    </header>
+    <div class="ui pusher" style="margin: 6rem">       
+        @RenderBody() 
+    </div>
+
+    <div class="footer">
+        <div class="ui container text centered">
+            &copy; @DateTime.Today.Year.ToString() - УФНС России по Ханты-Мансийскому автономному округу - Югре
+        </div>
+    </div>
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/Semantic-UI-CSS-master/semantic.min.js"></script>
+    <script src="~/lib/fontawesome-free-6.4.2-web/js/all.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

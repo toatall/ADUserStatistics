@@ -1,0 +1,240 @@
+﻿@{
+    ViewData["Title"] = "Active Directory Statistic";
+    var urlUserBlocked = Url.Action("UsersBlocked", "Home");
+    var urlUserPasswordEperied = Url.Action("UsersPasswordEperied", "Home");
+}
+@model PasswordPolicy
+
+<div class="ui grid">
+    <div class="four wide column">
+        <div class="ui message medium header">
+            <p style="text-align: center;">
+                Политики учетных записей<br />
+                <small>@Model.DistinguishedName</small>
+            </p>
+            <div class="ui vertical steps" style="width: 100%; margin: auto;">
+                <div class="step">
+                    <i class="arrows alternate horizontal icon blue"></i>
+                    <div class="content">
+                        <div class="title">от @Model.MinPwdLength символов</div>
+                        <div class="description">длинна пароля</div>
+                    </div>
+                </div>
+                <div class="step">
+                    <i class="calendar alternate outline icon green"></i>
+                    <div class="content">
+                        <div class="title">от @(Model.MinPwdAge.Days * -1) до @(Model.MaxPwdAge.Days * -1) дней</div>
+                        <div class="description">срок действия пароля</div>
+                    </div>
+                </div>
+                <div class="step">
+                    <i class="times circle icon red"></i>
+                    <div class="content">
+                        <div class="title">
+                            @Model.LockoutThreshold
+                            @if (Model.LockoutThreshold == 1)
+                            {
+                                <text>попытка</text>
+                            }
+                            else if (Model.LockoutThreshold > 1 && Model.LockoutThreshold < 5)
+                            {
+                                <text>попытки</text>
+                            }
+                            else
+                            {
+                                <text>попыток</text>
+                            }
+                            ввода пароля
+                        </div>
+                        <div class="description">учетная запись будет заблокирована</div>
+                    </div>
+                </div>
+
+                <div class="step">
+                    <i class="lock icon grey"></i>
+                    <div class="content">
+                        <div class="title">@(Model.LockoutDuration.TotalMinutes * -1) минут</div>
+                        <div class="description">время блокировки пароля</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+    <div class="twelve wide column">       
+        <div class="ui top attached tabular menu">
+            <a class="item active" data-tab="user-blocked">
+                <i class="lock icon red"></i>
+                Заблокированные учетные записи
+                <div class="ui grey label">
+                    0                    
+                </div>
+            </a>
+            <a class="item" data-tab="user-password-expired">
+                <i class="battery empty icon orange"></i>
+                Учетные записи с просроченым паролем
+                <div class="ui grey label">
+                    0
+                </div>
+            </a>
+        </div>
+        <div class="ui bottom attached tab segment active" data-tab="user-blocked">
+            <div class="ui message info">
+                Учетные записи, которые были заблокированы в связи с некорректным вводом пароля
+            </div>
+            <div class="ui active centered inline loader"></div>
+            <div class="container"></div>
+        </div>
+        <div class="ui bottom attached tab segment" data-tab="user-password-expired">
+            <div class="ui message info">
+                Учетные записи, для которых требуется смена пароля
+            </div>
+            <div class="ui active centered inline loader"></div>
+            <div class="container"></div>
+        </div>
+
+    </div>
+</div>
+
+@section Scripts {
+    <script type="text/javascript">
+        
+        $('.menu .item').tab()
+                
+        async function loader(url, parentElement, func, timeout) {
+
+            // обновляем изображение, если только вкладка открыта
+            if (!document.hidden) {
+
+                let response = await fetch(url)
+
+                parentElement.querySelector('.loader').style.display = 'none'                
+
+                // ok
+                if (response.status == 200) {
+                    let data = await response.json()
+                    if (func) {
+                        func(data)
+                    }
+                    
+                }
+                else {
+                    parentElement.querySelector('.container').innerHTML = 
+                        '<div class="ui message negative transition">'                            
+                            + '<div class="header">Ошибка</div>'
+                            + '<p>' + response.statusText + ': ' + response.status + '</p>'
+                        + '</div>'
+                    console.error(response)
+                }
+            }
+           
+            if (timeout) {
+                setTimeout(() => loader(url, parentElement, func, timeout), timeout)
+            }
+        }
+
+        loader('@urlUserBlocked', document.querySelector('.tab[data-tab="user-blocked"]'), (data) => {
+            const container = document.querySelector('.tab[data-tab="user-blocked"]').querySelector('.container')
+            const tabCount = document.querySelector('.item[data-tab="user-blocked"]').querySelector('.label')
+            if (Array.isArray(data) && data.length > 0) {
+                tabCount.innerHTML = data.length
+                let table = `
+                    <table class="ui celled table">
+                        <thead>
+                            <tr>
+                                <th>Учетная запись</th>
+                                <th>ФИО</th>
+                                <th>Отдeл (должность)</th>
+                                <th>Время блокировки</th>
+                                <th>Время разблокировки</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {body}
+                        </tbody>
+                    </table>`;
+
+                let dataTable = ''
+                data.forEach((item) => {
+                    dataTable += `
+                        <tr>
+                            <td>${item.saMaccountName}</td>
+                            <td>${item.displayName}</td>
+                            <td>${item.department} (${item.title})</td>
+                            <td>${item.lockoutTimeAsString}</td>
+                            <td>
+                                ${item.leftDateTimeBlockAsString}
+                                ` + (item.leftPercent ?                                     
+                                    `
+                                        (осталось ${item.leftMinutesBlockAsInt} мин.)
+                                        <div class="ui tiny indicating progress" data-percent="${item.leftPercent}" style="margin-top: 1rem;">
+                                            <div class="bar" style="width: ${item.leftPercent}%;"></div>
+                                        </div>
+                                    ` : ''
+                                ) + `
+                            </td>
+                        </tr>
+                    `
+                })            
+
+                container.innerHTML = table.replace('{body}', dataTable)
+
+            }
+            else
+            {
+                container.innerHTML = '<div class="">Нет данных</div>'
+                tabCount.innerHTML = '0'
+            }
+
+        }, 5000)
+
+
+        loader('@urlUserPasswordEperied', document.querySelector('.tab[data-tab="user-password-expired"]'), (data) => {
+            const container = document.querySelector('.tab[data-tab="user-password-expired"]').querySelector('.container')
+            const tabCount = document.querySelector('.item[data-tab="user-password-expired"]').querySelector('.label')
+
+            if (Array.isArray(data) && data.length > 0) {
+                tabCount.innerHTML = data.length
+                let table = `
+                            <table class="ui celled table">
+                                <thead>
+                                    <tr>
+                                        <th>Учетная запись</th>
+                                        <th>ФИО</th>
+                                        <th>Отдeл (должность)</th>
+                                        <th>Дата последней смены пароля</th>
+                                        <th>Просрочено (дней)</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {body}
+                                </tbody>
+                            </table>`;
+
+                let dataTable = ''
+                data.forEach((item) => {
+                    dataTable += `
+                                <tr>
+                                    <td>${item.saMaccountName}</td>
+                                    <td>${item.displayName}</td>
+                                    <td>${item.department} (${item.title})</td>
+                                    <td>${item.pwdLastSetAsString}</td>
+                                    <td>${item.getExpriedPasswordDays}</td>                                    
+                                </tr>
+                            `
+                })
+
+                container.innerHTML = table.replace('{body}', dataTable)
+
+            }
+            else {
+                container.innerHTML = '<div class="">Нет данных</div>'
+                tabCount.innerHTML = '0'
+            }
+        
+
+        }, 1000 * 60 * 60)
+
+    </script>
+}
+
